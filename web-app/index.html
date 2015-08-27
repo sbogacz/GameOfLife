@@ -26,14 +26,16 @@
       </div>
 	<div class="jumbotron">
 		<table class='grid'>
-			<tr  ng-repeat="row in board.Grid">
+			<tr  ng-repeat="row in board.grid" ng-init="rowIndex = $index">
 				<td ng-class="{'alive':cell}"
 					ng-repeat="cell in row track by $index"
-					ng-click="cell = (cell) ? false : true"></div>
+					ng-init="columnIndex = $index"
+					ng-click="update(rowIndex,columnIndex, cell)"></div>
 				</td>
 			</tr>
 		</table>
 	</div>	
+	<game-of-life></game-of-life>
 	</div-->
       <footer class="footer">
         <p>&copy; Steven Bogacz 2015</p>

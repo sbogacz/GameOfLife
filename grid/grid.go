@@ -7,8 +7,9 @@ import (
 )
 
 type Grid struct {
-	Grid          [][]bool
-	width, height int
+	Grid   [][]bool `json:"grid"`
+	Width  int      `json:"width"`
+	Height int      `json:"height"`
 }
 
 func NewGrid(width, height int) Grid {
@@ -16,7 +17,7 @@ func NewGrid(width, height int) Grid {
 	for i := range grid {
 		grid[i] = make([]bool, width)
 	}
-	return Grid{Grid: grid, width: width, height: height}
+	return Grid{Grid: grid, Width: width, Height: height}
 }
 
 func (g Grid) Set(x, y int, val bool) {
@@ -32,8 +33,8 @@ func (g Grid) State(x, y int) (state bool) {
 // so make helper functions to use later on
 func (g Grid) GetNewYCoord(coord int) (newY int) {
 	if coord < 0 {
-		newY = g.height - 1
-	} else if coord >= g.height {
+		newY = g.Height - 1
+	} else if coord >= g.Height {
 		newY = 0
 	} else {
 		newY = coord
@@ -43,8 +44,8 @@ func (g Grid) GetNewYCoord(coord int) (newY int) {
 
 func (g Grid) GetNewXCoord(coord int) (newX int) {
 	if coord < 0 {
-		newX = g.width - 1
-	} else if coord >= g.width {
+		newX = g.Width - 1
+	} else if coord >= g.Width {
 		newX = 0
 	} else {
 		newX = coord
@@ -55,11 +56,11 @@ func (g Grid) GetNewXCoord(coord int) (newX int) {
 func (g Grid) GetBoardString() string {
 	var buffer bytes.Buffer
 	//first do the outer loop (height)
-	for i := 0; i < g.height; i++ {
+	for i := 0; i < g.Height; i++ {
 		//start with a tab, to make it look better
 		buffer.WriteString("\t")
 		//next do inner loop, for rows
-		for j := 0; j < g.width; j++ {
+		for j := 0; j < g.Width; j++ {
 			buffer.WriteString(getChar(g.Grid[i][j]))
 		}
 		//end line
@@ -72,7 +73,7 @@ func (g Grid) GetBoardString() string {
 }
 
 func (g Grid) Display() {
-	fmt.Print(g.GetBoardString)
+	fmt.Print(g.GetBoardString())
 }
 
 func getChar(state bool) string {
@@ -87,9 +88,9 @@ func (g Grid) Encode() string {
 	buffer.WriteString("{\"grid\":{\n")
 	buffer.WriteString("\t\"rows\":[\n")
 	//first do the outer loop
-	for i := 0; i < g.height; i++ {
+	for i := 0; i < g.Height; i++ {
 		buffer.WriteString("\t\t[")
-		for j := 0; j < g.width; j++ {
+		for j := 0; j < g.Width; j++ {
 			//buffer.WriteString("\"")
 			buffer.WriteString(strconv.FormatBool(g.Grid[i][j]))
 			//buffer.WriteString("\"")
@@ -105,17 +106,17 @@ func (g Grid) Encode() string {
 }
 
 func (g Grid) Copy(src Grid) {
-	for i :=0; i < g.height; i++ {
-		for j:= 0; j<g.width; j++ {
-			g.Grid[i][j] = src.Grid[i][j]
+	for j := 0; j < g.Height; j++ {
+		for i := 0; i < g.Width; i++ {
+			g.Grid[j][i] = src.Grid[j][i]
 		}
 	}
 }
 
 //reset grid
 func (g Grid) Clear() {
-	for j := 0; j < g.height; j++ {
-		for i := 0; i < g.width; i++ {
+	for j := 0; j < g.Height; j++ {
+		for i := 0; i < g.Width; i++ {
 			g.Set(i, j, false)
 		}
 	}

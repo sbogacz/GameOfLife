@@ -1,12 +1,14 @@
 package service
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/sbogacz/GameOfLife/grid"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 //for this POC just maintain 20 grids in memory at most.
@@ -43,6 +45,9 @@ func InitGame(writer http.ResponseWriter, request *http.Request) {
 		panic(err)
 	}
 	writer.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	writer.Header().Set("Access-Control-Allow-Origin", "*")
+	writer.Header().Set("Access-Control-Allow-Methods", "PUT")
+	writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	writer.WriteHeader(http.StatusOK)
 	writer.Write(gameIdJSON)
 	//fmt.Fprintf(writer, "{ gameID : %d}", gameId)
@@ -138,7 +143,20 @@ func GetGameBoardJSON(writer http.ResponseWriter, request *http.Request) {
 func UpdateGameBoard(writer http.ResponseWriter, request *http.Request) {
 	var gameId int
 	var err error
-	var updatedGrid grid.Grid
+	updatedGrid := grid.Grid{}
+	buffer := new(bytes.Buffer)
+	buffer.ReadFrom(request.Body)
+	jsonRequest := strings.TrimSpace(buffer.String())
+
+	if request.Method == "OPTIONS" {
+		fmt.Println("no json data received")
+		writer.Header().Set("Content-Type", "application/json;charset-UTF-8")
+		writer.Header().Set("Access-Control-Allow-Origin", "*")
+		writer.Header().Set("Access-Control-Allow-Methods", "PUT")
+		writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		writer.WriteHeader(http.StatusOK)
+		return
+	}
 	vars := mux.Vars(request)
 	if gameId, err = strconv.Atoi(vars["gameId"]); err != nil {
 		panic(err)
@@ -148,13 +166,17 @@ func UpdateGameBoard(writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(http.StatusNotFound)
 		return
 	}
-	fmt.Printf(request.Body.Reader)
-	decoder := json.NewDecoder(request.Body)
+
+	decoder := json.NewDecoder(strings.NewReader(jsonRequest))
 	if err = decoder.Decode(&updatedGrid); err != nil {
-		panic(err)
+		fmt.Printf(err.Error())
 	}
+
 	activeGames[gameId].CurrentGrid.Copy(updatedGrid)
+
 	writer.Header().Set("Content-Type", "application/json;charset-UTF-8")
 	writer.Header().Set("Access-Control-Allow-Origin", "*")
+	writer.Header().Set("Access-Control-Allow-Methods", "PUT")
+	writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	writer.WriteHeader(http.StatusOK)
 }
