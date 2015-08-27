@@ -1,12 +1,14 @@
 package service
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/sbogacz/GameOfLife/grid"
 	"net/http"
 	"strconv"
-	"encoding/json"
+	"strings"
 )
 
 //for this POC just maintain 20 grids in memory at most.
@@ -36,13 +38,16 @@ func InitGame(writer http.ResponseWriter, request *http.Request) {
 	activeGames[gameId] = *l
 	//max 20 games
 	numGames++
-	
+
 	var err error
 	var gameIdJSON []byte
 	if gameIdJSON, err = json.Marshal(gameId); err != nil {
 		panic(err)
 	}
 	writer.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	writer.Header().Set("Access-Control-Allow-Origin", "*")
+	writer.Header().Set("Access-Control-Allow-Methods", "PUT")
+	writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	writer.WriteHeader(http.StatusOK)
 	writer.Write(gameIdJSON)
 	//fmt.Fprintf(writer, "{ gameID : %d}", gameId)
@@ -59,10 +64,10 @@ func GetGameBoard(writer http.ResponseWriter, request *http.Request) {
 		panic(err)
 	}
 	if gameId < 0 || gameId >= numGames {
-        writer.Header().Set("Content-Type", "application/json; charset=UTF-8")
-        writer.WriteHeader(http.StatusNotFound)
-        return
-    }
+		writer.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		writer.WriteHeader(http.StatusNotFound)
+		return
+	}
 
 	fmt.Fprintf(writer, "Looking up Game of Life with id = %d\n", gameId)
 	layout := activeGames[gameId].CurrentGrid.GetBoardString()
@@ -79,13 +84,22 @@ func StepGame(writer http.ResponseWriter, request *http.Request) {
 	if gameId, err = strconv.Atoi(vars["gameId"]); err != nil {
 		panic(err)
 	}
-	if gameId < 0 || gameId >= numGames {
-        writer.Header().Set("Content-Type", "application/json; charset=UTF-8")
-        writer.WriteHeader(http.StatusNotFound)
-        return
-    }
+	if gameId < 0 || gameId > numGames {
+		writer.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		writer.WriteHeader(http.StatusNotFound)
+		return
+	}
+
 	activeGames[gameId].Step()
-	activeGames[gameId].CurrentGrid.Display()
+	var layout []byte
+	if layout, err = json.Marshal(activeGames[gameId].CurrentGrid); err != nil {
+		panic(err)
+	}
+	writer.Header().Set("Content-Type", "application/json;charset-UTF-8")
+	writer.Header().Set("Access-Control-Allow-Origin", "*")
+	writer.Header().Set("Access-Control-Allow-Methods", "PUT")
+	writer.WriteHeader(http.StatusOK)
+	writer.Write(layout)
 }
 
 //returns the number of games in the activeGames array
@@ -93,7 +107,7 @@ func GetNumActiveGames(writer http.ResponseWriter, request *http.Request) {
 	if numGames != 1 {
 		if numGames > 20 {
 			fmt.Fprintf(writer, "There are %d active games", 20)
-		}else{
+		} else {
 			fmt.Fprintf(writer, "There are %d active games", numGames)
 		}
 	} else {
@@ -102,50 +116,67 @@ func GetNumActiveGames(writer http.ResponseWriter, request *http.Request) {
 }
 
 func GetGameBoardJSON(writer http.ResponseWriter, request *http.Request) {
-    var gameId int
-    var err error
-    vars := mux.Vars(request)
-    if gameId, err = strconv.Atoi(vars["gameId"]); err != nil {
-        panic(err)
-    }
+	var gameId int
+	var err error
+	vars := mux.Vars(request)
+	if gameId, err = strconv.Atoi(vars["gameId"]); err != nil {
+		panic(err)
+	}
 	if gameId < 0 || gameId >= numGames {
-        writer.Header().Set("Content-Type", "application/json; charset=UTF-8")
-        writer.WriteHeader(http.StatusNotFound)
-        return
-    }
+		writer.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		writer.WriteHeader(http.StatusNotFound)
+		return
+	}
 	writer.Header().Set("Content-Type", "application/json;charset-UTF-8")
 	writer.Header().Set("Access-Control-Allow-Origin", "*")
-	writer.WriteHeader(http.StatusOK)   
-    //fmt.Fprintf(writer, "Looking up Game of Life with id = %d\n", gameId)
-    //layout := activeGames[gameId].CurrentGrid.Encode()
-    var layout []byte
+	writer.WriteHeader(http.StatusOK)
+	//fmt.Fprintf(writer, "Looking up Game of Life with id = %d\n", gameId)
+	//layout := activeGames[gameId].CurrentGrid.Encode()
+	var layout []byte
 	if layout, err = json.Marshal(activeGames[gameId].CurrentGrid); err != nil {
 		panic(err)
 	}
 	writer.Write(layout)
-	//fmt.Fprintf(writer, layout)    
-} 
+	//fmt.Fprintf(writer, layout)
+}
 
 func UpdateGameBoard(writer http.ResponseWriter, request *http.Request) {
 	var gameId int
 	var err error
-	var updatedGrid grid.Grid
+	updatedGrid := grid.Grid{}
+	buffer := new(bytes.Buffer)
+	buffer.ReadFrom(request.Body)
+	jsonRequest := strings.TrimSpace(buffer.String())
+
+	if request.Method == "OPTIONS" {
+		fmt.Println("no json data received")
+		writer.Header().Set("Content-Type", "application/json;charset-UTF-8")
+		writer.Header().Set("Access-Control-Allow-Origin", "*")
+		writer.Header().Set("Access-Control-Allow-Methods", "PUT")
+		writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		writer.WriteHeader(http.StatusOK)
+		return
+	}
 	vars := mux.Vars(request)
 	if gameId, err = strconv.Atoi(vars["gameId"]); err != nil {
-        panic(err)
-    }
-	if gameId < 0 || gameId >= numGames {
-        writer.Header().Set("Content-Type", "application/json; charset=UTF-8")
-        writer.WriteHeader(http.StatusNotFound)
-        return
-    }
-	decoder := json.NewDecoder(request.Body)
-	if err = decoder.Decode(request.Body, &updatedGrid); err != nil {
 		panic(err)
 	}
+	if gameId < 0 || gameId >= numGames {
+		writer.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		writer.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	decoder := json.NewDecoder(strings.NewReader(jsonRequest))
+	if err = decoder.Decode(&updatedGrid); err != nil {
+		fmt.Printf(err.Error())
+	}
+
 	activeGames[gameId].CurrentGrid.Copy(updatedGrid)
+
 	writer.Header().Set("Content-Type", "application/json;charset-UTF-8")
-    writer.Header().Set("Access-Control-Allow-Origin", "*")
-    writer.WriteHeader(http.StatusOK)
+	writer.Header().Set("Access-Control-Allow-Origin", "*")
+	writer.Header().Set("Access-Control-Allow-Methods", "PUT")
+	writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	writer.WriteHeader(http.StatusOK)
 }
-*/	

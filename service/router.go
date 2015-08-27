@@ -11,7 +11,7 @@ func NewRouter() (router *mux.Router) {
 		var handler http.Handler
 		handler = route.HandlerFunc
 
-		router.Methods(route.Method).
+		router.Methods(route.Method, "OPTIONS").
 			Path(route.Pattern).
 			Name(route.Name).
 			Handler(handler)

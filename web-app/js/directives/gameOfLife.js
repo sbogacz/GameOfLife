@@ -1,8 +1,9 @@
 app.directive('gameOfLife', function() {
+
   return {
     restrict: 'E',
     scope: {
-      info: '='
+      content: '='
     },
     templateUrl: 'js/directives/gameOfLife.html'
   };

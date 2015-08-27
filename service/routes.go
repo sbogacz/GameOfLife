@@ -20,7 +20,7 @@ var routes = Routes{
 	},
 	Route{
 		"InitGame",
-		"PUT",
+		"POST",
 		"/initGame/{gameType}",
 		InitGame,
 	},
@@ -37,9 +37,15 @@ var routes = Routes{
 		StepGame,
 	},
 	Route{
-        "GetGameJSON",
-        "GET",
-        "/getGameJSON/{gameId:[0-9]+}",
-        GetGameBoardJSON,
-    },
+		"GetGameJSON",
+		"GET",
+		"/getGameJSON/{gameId:[0-9]+}",
+		GetGameBoardJSON,
+	},
+	Route{
+		"UpdateGame",
+		"PUT",
+		"/updateGame/{gameId:[0-9]+}",
+		UpdateGameBoard,
+	},
 }
