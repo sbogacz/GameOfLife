@@ -3,9 +3,10 @@ package service
 import (
 	"fmt"
 	"github.com/gorilla/mux"
-	"github.com/sbogacz/game_of_life/grid"
+	"github.com/sbogacz/GameOfLife/grid"
 	"net/http"
 	"strconv"
+	"encoding/json"
 )
 
 //for this POC just maintain 20 grids in memory at most.
@@ -35,10 +36,16 @@ func InitGame(writer http.ResponseWriter, request *http.Request) {
 	activeGames[gameId] = *l
 	//max 20 games
 	numGames++
-
+	
+	var err error
+	var gameIdJSON []byte
+	if gameIdJSON, err = json.Marshal(gameId); err != nil {
+		panic(err)
+	}
 	writer.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	writer.WriteHeader(http.StatusOK)
-	fmt.Fprintf(writer, "GameId = %d\n", gameId)
+	writer.Write(gameIdJSON)
+	//fmt.Fprintf(writer, "{ gameID : %d}", gameId)
 }
 
 //right now we're just printing the state of the board, but once we
@@ -51,6 +58,12 @@ func GetGameBoard(writer http.ResponseWriter, request *http.Request) {
 	if gameId, err = strconv.Atoi(vars["gameId"]); err != nil {
 		panic(err)
 	}
+	if gameId < 0 || gameId >= numGames {
+        writer.Header().Set("Content-Type", "application/json; charset=UTF-8")
+        writer.WriteHeader(http.StatusNotFound)
+        return
+    }
+
 	fmt.Fprintf(writer, "Looking up Game of Life with id = %d\n", gameId)
 	layout := activeGames[gameId].CurrentGrid.GetBoardString()
 	fmt.Fprintf(writer, layout)
@@ -66,7 +79,11 @@ func StepGame(writer http.ResponseWriter, request *http.Request) {
 	if gameId, err = strconv.Atoi(vars["gameId"]); err != nil {
 		panic(err)
 	}
-	fmt.Fprintf(writer, "Looking up Game of Life with id = %d\n", gameId)
+	if gameId < 0 || gameId >= numGames {
+        writer.Header().Set("Content-Type", "application/json; charset=UTF-8")
+        writer.WriteHeader(http.StatusNotFound)
+        return
+    }
 	activeGames[gameId].Step()
 	activeGames[gameId].CurrentGrid.Display()
 }
@@ -91,11 +108,44 @@ func GetGameBoardJSON(writer http.ResponseWriter, request *http.Request) {
     if gameId, err = strconv.Atoi(vars["gameId"]); err != nil {
         panic(err)
     }
+	if gameId < 0 || gameId >= numGames {
+        writer.Header().Set("Content-Type", "application/json; charset=UTF-8")
+        writer.WriteHeader(http.StatusNotFound)
+        return
+    }
 	writer.Header().Set("Content-Type", "application/json;charset-UTF-8")
 	writer.Header().Set("Access-Control-Allow-Origin", "*")
 	writer.WriteHeader(http.StatusOK)   
     //fmt.Fprintf(writer, "Looking up Game of Life with id = %d\n", gameId)
-    layout := activeGames[gameId].CurrentGrid.Encode()
-    fmt.Fprintf(writer, layout)
-    
+    //layout := activeGames[gameId].CurrentGrid.Encode()
+    var layout []byte
+	if layout, err = json.Marshal(activeGames[gameId].CurrentGrid); err != nil {
+		panic(err)
+	}
+	writer.Write(layout)
+	//fmt.Fprintf(writer, layout)    
 } 
+
+func UpdateGameBoard(writer http.ResponseWriter, request *http.Request) {
+	var gameId int
+	var err error
+	var updatedGrid grid.Grid
+	vars := mux.Vars(request)
+	if gameId, err = strconv.Atoi(vars["gameId"]); err != nil {
+        panic(err)
+    }
+	if gameId < 0 || gameId >= numGames {
+        writer.Header().Set("Content-Type", "application/json; charset=UTF-8")
+        writer.WriteHeader(http.StatusNotFound)
+        return
+    }
+	decoder := json.NewDecoder(request.Body)
+	if err = decoder.Decode(request.Body, &updatedGrid); err != nil {
+		panic(err)
+	}
+	activeGames[gameId].CurrentGrid.Copy(updatedGrid)
+	writer.Header().Set("Content-Type", "application/json;charset-UTF-8")
+    writer.Header().Set("Access-Control-Allow-Origin", "*")
+    writer.WriteHeader(http.StatusOK)
+}
+*/	

@@ -1,0 +1,11 @@
+<div class="jumbotron">
+	<div class="row" ng-repeat="row in board.grid.rows">
+            
+        <div ng-class="cell==true ? 'live-tile' : 'dead-tile'" ng-repeat="cell in row track by $index">{{cell}}</div>
+	</div>
+       <!--h1>Game oF Life Test</h1>
+        <p class="lead">This is a quick POC for using Go and AngularJS together in service-based web architectures.</p-->
+        <!--p><button class="btn btn-lg btn-success" href="#" role="button">Start</button></p-->
+	<game-of-life-board></game-of-life-board>
+
+</div>

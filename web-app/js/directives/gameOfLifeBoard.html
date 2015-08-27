@@ -1,0 +1,7 @@
+<div class="board">
+	<div class="row" ng-repeat="row in board.grid.rows track by $index">
+		<div class="cell-block" ng-repeat="cell in row track by $index">
+			{{cell}}
+		</div>
+	</div>
+</div>
