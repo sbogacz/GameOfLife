@@ -79,13 +79,22 @@ func StepGame(writer http.ResponseWriter, request *http.Request) {
 	if gameId, err = strconv.Atoi(vars["gameId"]); err != nil {
 		panic(err)
 	}
-	if gameId < 0 || gameId >= numGames {
+	if gameId < 0 || gameId > numGames {
         writer.Header().Set("Content-Type", "application/json; charset=UTF-8")
         writer.WriteHeader(http.StatusNotFound)
         return
     }
+
 	activeGames[gameId].Step()
-	activeGames[gameId].CurrentGrid.Display()
+	var layout []byte
+    if layout, err = json.Marshal(activeGames[gameId].CurrentGrid); err != nil {
+        panic(err)
+    }   
+	writer.Header().Set("Content-Type", "application/json;charset-UTF-8")
+    writer.Header().Set("Access-Control-Allow-Origin", "*")
+    writer.Header().Set("Access-Control-Allow-Methods", "PUT")
+	writer.WriteHeader(http.StatusOK)
+	writer.Write(layout)
 }
 
 //returns the number of games in the activeGames array
@@ -140,7 +149,7 @@ func UpdateGameBoard(writer http.ResponseWriter, request *http.Request) {
         return
     }
 	decoder := json.NewDecoder(request.Body)
-	if err = decoder.Decode(request.Body, &updatedGrid); err != nil {
+	if err = decoder.Decode(&updatedGrid); err != nil {
 		panic(err)
 	}
 	activeGames[gameId].CurrentGrid.Copy(updatedGrid)
@@ -148,4 +157,4 @@ func UpdateGameBoard(writer http.ResponseWriter, request *http.Request) {
     writer.Header().Set("Access-Control-Allow-Origin", "*")
     writer.WriteHeader(http.StatusOK)
 }
-*/	
+	

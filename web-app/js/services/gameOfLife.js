@@ -18,12 +18,17 @@ app.factory('gameOfLife', function($http) {
 		return $http.get("http://199.233.247.129:8080/getGameJSON/" + gameId);
 	};
 	
-	gameOfLife.stepBoard = function() {
-		return $http.put("http://199.233.247.129:8080/stepGame/1");
+	gameOfLife.stepBoard = function(id) {
+		return $http.put("http://199.233.247.129:8080/stepGame/" + id);
 	}
 
 	gameOfLife.newBoard = function() {
 		return $http.put("http://199.233.247.129:8080/initGame/classic");
+	}
+
+	gameOfLife.updateGame = function(board, id) {
+		console.log(angular.toJson(board));
+		return $http.put("http://199.233.247.129:8080/updateGame/" + id, angular.toJson(board));
 	}
 
 	return gameOfLife;
