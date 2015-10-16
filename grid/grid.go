@@ -6,12 +6,14 @@ import (
 	"strconv"
 )
 
+//Grid is the struct that holds the a grids information
 type Grid struct {
 	Grid   [][]bool `json:"grid"`
 	Width  int      `json:"width"`
 	Height int      `json:"height"`
 }
 
+//NewGrid creates a new multidimensional slice to hold the grid
 func NewGrid(width, height int) Grid {
 	grid := make([][]bool, height)
 	for i := range grid {
@@ -20,16 +22,19 @@ func NewGrid(width, height int) Grid {
 	return Grid{Grid: grid, Width: width, Height: height}
 }
 
+//Set allows us to set specific locations to different values
 func (g Grid) Set(x, y int, val bool) {
 	g.Grid[y][x] = val
+	return
 }
 
+//State returns the state of the requested location
 func (g Grid) State(x, y int) (state bool) {
 	state = g.Grid[y][x]
 	return
 }
 
-// Go doesn't do array index checking for multidimensional arrays (I think)
+// GetNewYCoord is because Go doesn't do array index checking for multidimensional arrays (I think)
 // so make helper functions to use later on
 func (g Grid) GetNewYCoord(coord int) (newY int) {
 	if coord < 0 {
@@ -42,6 +47,7 @@ func (g Grid) GetNewYCoord(coord int) (newY int) {
 	return
 }
 
+//GetNewXCoord see explanation above
 func (g Grid) GetNewXCoord(coord int) (newX int) {
 	if coord < 0 {
 		newX = g.Width - 1
@@ -53,6 +59,7 @@ func (g Grid) GetNewXCoord(coord int) (newX int) {
 	return
 }
 
+//GetBoardString is to convert the board's CurrentGrid to a string
 func (g Grid) GetBoardString() string {
 	var buffer bytes.Buffer
 	//first do the outer loop (height)
@@ -72,6 +79,8 @@ func (g Grid) GetBoardString() string {
 	return buffer.String()
 }
 
+//Display is a helper function to display the board to stdout
+//irrelevant for webapp
 func (g Grid) Display() {
 	fmt.Print(g.GetBoardString())
 }
@@ -83,6 +92,7 @@ func getChar(state bool) string {
 	return "."
 }
 
+//Encode is a function to encode a grid to JSON. This is probably superfluous
 func (g Grid) Encode() string {
 	var buffer bytes.Buffer
 	buffer.WriteString("{\"grid\":{\n")
@@ -105,6 +115,7 @@ func (g Grid) Encode() string {
 	return buffer.String()
 }
 
+//Copy is to copy the values of src grid to the grid we are acting on
 func (g Grid) Copy(src Grid) {
 	for j := 0; j < g.Height; j++ {
 		for i := 0; i < g.Width; i++ {
@@ -113,7 +124,7 @@ func (g Grid) Copy(src Grid) {
 	}
 }
 
-//reset grid
+//Clear is to reset grid
 func (g Grid) Clear() {
 	for j := 0; j < g.Height; j++ {
 		for i := 0; i < g.Width; i++ {
